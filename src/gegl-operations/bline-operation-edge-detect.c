@@ -6,6 +6,12 @@
 
 #define EDGE_DETECT_RADIUS 1
 
+// Sobel: vertical e horizontal
+const int SOBEL_MASK[2][3][3] = {
+    {{1, 0, -1}, {2, 0, -2}, {1, 0, -1}},
+    {{1, 2, 1}, {0, 0, 0}, {-1, -2, -1}},
+};
+
 static gboolean bline_operation_edge_detect_process (GeglOperation       *operation,
                                                GeglBuffer          *input,
                                                GeglBuffer          *output,
@@ -31,16 +37,16 @@ prepare (GeglOperation *operation)
   GeglOperationAreaFilter *area = GEGL_OPERATION_AREA_FILTER (operation);
 
   area->left = area->right = area->top = area->bottom = EDGE_DETECT_RADIUS;
-  gegl_operation_set_format (operation, "input", babl_format ("RGBA float"));
-  gegl_operation_set_format (operation, "output", babl_format ("RGBA float"));
+  gegl_operation_set_format (operation, "input", babl_format ("Y u8"));
+  gegl_operation_set_format (operation, "output", babl_format ("Y u8"));
 }
 
 static gboolean
 bline_operation_edge_detect_process (GeglOperation       *operation,
-                               GeglBuffer          *input,
-                               GeglBuffer          *output,
-                               const GeglRectangle *result,
-                               gint                 level)
+                                     GeglBuffer          *input,
+                                     GeglBuffer          *output,
+                                     const GeglRectangle *result,
+                                     gint                 level)
 {
   GeglRectangle compute;
 
@@ -67,87 +73,33 @@ bline_edge (GeglBuffer          *src,
             gboolean            keep_signal)
 {
 
-  gint x,y;
+  gint x, y;
   gint offset;
-  gfloat *src_buf;
-  gfloat *dst_buf;
+  guchar *src_buf;
+  guchar *dst_buf;
 
   gint src_width = src_rect->width;
 
-  src_buf = g_new0 (gfloat, src_rect->width * src_rect->height * 4);
-  dst_buf = g_new0 (gfloat, dst_rect->width * dst_rect->height * 4);
+  src_buf = g_new0 (guchar, src_rect->width * src_rect->height);
+  dst_buf = g_new0 (guchar, dst_rect->width * dst_rect->height);
 
-  gegl_buffer_get (src, src_rect, 1.0, babl_format ("RGBA float"), src_buf, GEGL_AUTO_ROWSTRIDE,
-                   GEGL_ABYSS_NONE);
+  gegl_buffer_get (src, src_rect, 1.0, babl_format ("Y u8"), src_buf,
+                   GEGL_AUTO_ROWSTRIDE, GEGL_ABYSS_NONE);
 
   offset = 0;
 
+  // just copy :-)
   for (y=0; y<dst_rect->height; y++)
     for (x=0; x<dst_rect->width; x++)
       {
-
-        gfloat hor_grad[3] = {0.0f, 0.0f, 0.0f};
-        gfloat ver_grad[3] = {0.0f, 0.0f, 0.0f};
-        gfloat gradient[4] = {0.0f, 0.0f, 0.0f, 0.0f};
-
-        gfloat *center_pix = src_buf + ((x+EDGE_DETECT_RADIUS)+((y+EDGE_DETECT_RADIUS) * src_width)) * 4;
-
-        gint c;
-
-        if (horizontal)
-          {
-            gint i=x+EDGE_DETECT_RADIUS, j=y+EDGE_DETECT_RADIUS;
-            gfloat *src_pix = src_buf + (i + j * src_width) * 4;
-
-            for (c=0;c<3;c++)
-                hor_grad[c] +=
-                    -1.0f*src_pix[c-4-src_width*4]+ src_pix[c+4-src_width*4] +
-                    -2.0f*src_pix[c-4] + 2.0f*src_pix[c+4] +
-                    -1.0f*src_pix[c-4+src_width*4]+ src_pix[c+4+src_width*4];
-          }
-
-        if (vertical)
-          {
-            gint i=x+EDGE_DETECT_RADIUS, j=y+EDGE_DETECT_RADIUS;
-            gfloat *src_pix = src_buf + (i + j * src_width) * 4;
-
-            for (c=0;c<3;c++)
-                ver_grad[c] +=
-                  -1.0f*src_pix[c-4-src_width*4]-2.0f*src_pix[c-src_width*4]-1.0f*src_pix[c+4-src_width*4] +
-                  src_pix[c-4+src_width*4]+2.0f*src_pix[c+src_width*4]+     src_pix[c+4+src_width*4];
-        }
-
-        if (horizontal && vertical)
-          {
-            for (c=0;c<3;c++)
-              // normalization to [0, 1]
-              gradient[c] = RMS(hor_grad[c],ver_grad[c])/1.41f;
-          }
-        else
-          {
-            if (keep_signal)
-              {
-                for (c=0;c<3;c++)
-                  gradient[c] = hor_grad[c]+ver_grad[c];
-              }
-            else
-              {
-                for (c=0;c<3;c++)
-                  gradient[c] = fabsf(hor_grad[c]+ver_grad[c]);
-              }
-          }
-
-        //alpha
-        gradient[3] = center_pix[3];
-
-        for (c=0; c<4;c++)
-          dst_buf[offset*4+c] = gradient[c];
-
+        guchar *srcpix = src_buf + (x + y * src_width);
+        dst_buf[offset] = *srcpix;
         offset++;
       }
 
-  gegl_buffer_set (dst, dst_rect, 0, babl_format ("RGBA float"), dst_buf,
+  gegl_buffer_set (dst, dst_rect, 0, babl_format ("Y u8"), dst_buf,
                    GEGL_AUTO_ROWSTRIDE);
+
   g_free (src_buf);
   g_free (dst_buf);
 }
