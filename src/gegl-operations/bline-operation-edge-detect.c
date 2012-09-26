@@ -2,12 +2,11 @@
 #include <math.h>
 #include <stdio.h>
 #include "config.h"
-#include "bline-operation-sobel.h"
+#include "bline-operation-edge-detect.h"
 
-#define SOBEL_RADIUS    1
-#define _(a)            a
+#define EDGE_DETECT_RADIUS 1
 
-static gboolean bline_operation_sobel_process (GeglOperation       *operation,
+static gboolean bline_operation_edge_detect_process (GeglOperation       *operation,
                                                GeglBuffer          *input,
                                                GeglBuffer          *output,
                                                const GeglRectangle *result,
@@ -22,22 +21,22 @@ static void     bline_edge                    (GeglBuffer          *src,
                                                gboolean            keep_signal);
 
 
-G_DEFINE_TYPE (BlineOperationSobel, bline_operation_sobel, GEGL_TYPE_OPERATION_AREA_FILTER)
+G_DEFINE_TYPE (BlineOperationEdgeDetect, bline_operation_edge_detect, GEGL_TYPE_OPERATION_AREA_FILTER)
 
-#define parent_class bline_operation_sobel_parent_class
+#define parent_class bline_operation_edge_detect_parent_class
 
 static void
 prepare (GeglOperation *operation)
 {
   GeglOperationAreaFilter *area = GEGL_OPERATION_AREA_FILTER (operation);
 
-  area->left = area->right = area->top = area->bottom = SOBEL_RADIUS;
+  area->left = area->right = area->top = area->bottom = EDGE_DETECT_RADIUS;
   gegl_operation_set_format (operation, "input", babl_format ("RGBA float"));
   gegl_operation_set_format (operation, "output", babl_format ("RGBA float"));
 }
 
 static gboolean
-bline_operation_sobel_process (GeglOperation       *operation,
+bline_operation_edge_detect_process (GeglOperation       *operation,
                                GeglBuffer          *input,
                                GeglBuffer          *output,
                                const GeglRectangle *result,
@@ -91,13 +90,13 @@ bline_edge (GeglBuffer          *src,
         gfloat ver_grad[3] = {0.0f, 0.0f, 0.0f};
         gfloat gradient[4] = {0.0f, 0.0f, 0.0f, 0.0f};
 
-        gfloat *center_pix = src_buf + ((x+SOBEL_RADIUS)+((y+SOBEL_RADIUS) * src_width)) * 4;
+        gfloat *center_pix = src_buf + ((x+EDGE_DETECT_RADIUS)+((y+EDGE_DETECT_RADIUS) * src_width)) * 4;
 
         gint c;
 
         if (horizontal)
           {
-            gint i=x+SOBEL_RADIUS, j=y+SOBEL_RADIUS;
+            gint i=x+EDGE_DETECT_RADIUS, j=y+EDGE_DETECT_RADIUS;
             gfloat *src_pix = src_buf + (i + j * src_width) * 4;
 
             for (c=0;c<3;c++)
@@ -109,7 +108,7 @@ bline_edge (GeglBuffer          *src,
 
         if (vertical)
           {
-            gint i=x+SOBEL_RADIUS, j=y+SOBEL_RADIUS;
+            gint i=x+EDGE_DETECT_RADIUS, j=y+EDGE_DETECT_RADIUS;
             gfloat *src_pix = src_buf + (i + j * src_width) * 4;
 
             for (c=0;c<3;c++)
@@ -154,26 +153,26 @@ bline_edge (GeglBuffer          *src,
 }
 
 static void
-bline_operation_sobel_init (BlineOperationSobel *self)
+bline_operation_edge_detect_init (BlineOperationEdgeDetect *self)
 {
 }
 
 static void
-bline_operation_sobel_class_init (BlineOperationSobelClass *klass)
+bline_operation_edge_detect_class_init (BlineOperationEdgeDetectClass *klass)
 {
   GObjectClass              *object_class    = G_OBJECT_CLASS (klass);
   GeglOperationClass        *operation_class = GEGL_OPERATION_CLASS (klass);
   GeglOperationFilterClass  *filter_class    = GEGL_OPERATION_FILTER_CLASS (klass);
 
-  //object_class->set_property    = bline_operation_sobel_set_property;
-  //object_class->get_property    = bline_operation_sobel_get_property;
+  //object_class->set_property    = bline_operation_edge_detect_set_property;
+  //object_class->get_property    = bline_operation_edge_detect_get_property;
 
   operation_class->prepare = prepare;
-  filter_class->process = bline_operation_sobel_process;
+  filter_class->process = bline_operation_edge_detect_process;
 
   gegl_operation_class_set_keys (operation_class,
-    "name"       , "bline:sobel",
+    "name"       , "bline:edge-detect",
     "categories" , "edge-detect",
-    "description", _("Specialized direction-dependent edge detection"),
+    "description", "Specialized direction-dependent edge detection",
     NULL);
 }

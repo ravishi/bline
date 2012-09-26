@@ -1,6 +1,6 @@
 #include <gegl.h>
 #include <glib/gprintf.h>
-#include "gegl-operations/bline-operation-sobel.h"
+#include "gegl-operations/bline-operation-edge-detect.h"
 
 int
 main (gint    argc,
@@ -8,7 +8,7 @@ main (gint    argc,
 {
   g_type_init ();
 
-  g_type_class_ref (BLINE_TYPE_OPERATION_SOBEL);
+  g_type_class_ref (BLINE_TYPE_OPERATION_EDGE_DETECT);
 
   gegl_init (&argc, &argv);
 
@@ -40,7 +40,7 @@ main (gint    argc,
 
     /*< The image nodes representing operations we want to perform */
     GeglNode *display = gegl_node_create_child (gegl, "gegl:display");
-    GeglNode *edge    = gegl_node_new_child (gegl, "operation", "bline:sobel", NULL);
+    GeglNode *edge    = gegl_node_new_child (gegl, "operation", "bline:edge-detect", NULL);
     GeglNode *load    = gegl_node_new_child (gegl, "operation", "gegl:load",
                                              "path", "/home/dirley/Imagens/kramer.png",
                                              NULL);
