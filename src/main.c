@@ -9,6 +9,9 @@ main (gint    argc,
   g_type_init ();
 
   g_type_class_ref (BLINE_TYPE_OPERATION_SOBEL);
+
+  gegl_init (&argc, &argv);
+
   {
     /* instantiate a graph */
     GeglNode *gegl = gegl_node_new ();

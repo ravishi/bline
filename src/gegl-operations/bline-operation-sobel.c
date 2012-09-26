@@ -27,29 +27,6 @@ G_DEFINE_TYPE (BlineOperationSobel, bline_operation_sobel, GEGL_TYPE_OPERATION_A
 #define parent_class bline_operation_sobel_parent_class
 
 static void
-bline_operation_sobel_class_init (BlineOperationSobelClass *klass)
-{
-  GObjectClass              *object_class    = G_OBJECT_CLASS (klass);
-  GeglOperationClass        *operation_class = GEGL_OPERATION_CLASS (klass);
-  GeglOperationFilterClass  *filter_class    = GEGL_OPERATION_FILTER_CLASS (klass);
-
-  //object_class->set_property    = bline_operation_sobel_set_property;
-  //object_class->get_property    = bline_operation_sobel_get_property;
-
-  gegl_operation_class_set_keys (operation_class,
-    "name"       , "bline:sobel",
-    "categories" , "edge-detect",
-    "description", _("Specialized direction-dependent edge detection"),
-    NULL);
-}
-
-static void
-bline_operation_sobel_init (BlineOperationSobel *self)
-{
-}
-
-
-static void
 prepare (GeglOperation *operation)
 {
   GeglOperationAreaFilter *area = GEGL_OPERATION_AREA_FILTER (operation);
@@ -174,4 +151,29 @@ bline_edge (GeglBuffer          *src,
                    GEGL_AUTO_ROWSTRIDE);
   g_free (src_buf);
   g_free (dst_buf);
+}
+
+static void
+bline_operation_sobel_init (BlineOperationSobel *self)
+{
+}
+
+static void
+bline_operation_sobel_class_init (BlineOperationSobelClass *klass)
+{
+  GObjectClass              *object_class    = G_OBJECT_CLASS (klass);
+  GeglOperationClass        *operation_class = GEGL_OPERATION_CLASS (klass);
+  GeglOperationFilterClass  *filter_class    = GEGL_OPERATION_FILTER_CLASS (klass);
+
+  //object_class->set_property    = bline_operation_sobel_set_property;
+  //object_class->get_property    = bline_operation_sobel_get_property;
+
+  operation_class->prepare = prepare;
+  filter_class->process = bline_operation_sobel_process;
+
+  gegl_operation_class_set_keys (operation_class,
+    "name"       , "bline:sobel",
+    "categories" , "edge-detect",
+    "description", _("Specialized direction-dependent edge detection"),
+    NULL);
 }
