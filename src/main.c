@@ -42,7 +42,7 @@ main (gint    argc,
     GeglNode *display = gegl_node_create_child (gegl, "gegl:display");
     GeglNode *edge    = gegl_node_new_child (gegl, "operation", "bline:edge-detect", NULL);
     GeglNode *load    = gegl_node_new_child (gegl, "operation", "gegl:load",
-                                             "path", "/home/dirley/Imagens/kramer.png",
+                                             "path", argv[1],
                                              NULL);
 
     gegl_node_link_many (load, edge, display, NULL);

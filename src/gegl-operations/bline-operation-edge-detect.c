@@ -4,7 +4,7 @@
 #include "config.h"
 #include "bline-operation-edge-detect.h"
 
-#define EDGE_DETECT_RADIUS 1
+#define SOBEL_RADIUS 1
 
 // Sobel: vertical e horizontal
 const int SOBEL_MASK[2][3][3] = {
@@ -35,10 +35,9 @@ static void
 prepare (GeglOperation *operation)
 {
   GeglOperationAreaFilter *area = GEGL_OPERATION_AREA_FILTER (operation);
-
-  area->left = area->right = area->top = area->bottom = EDGE_DETECT_RADIUS;
-  gegl_operation_set_format (operation, "input", babl_format ("Y u8"));
-  gegl_operation_set_format (operation, "output", babl_format ("Y u8"));
+  area->left = area->right = area->top = area->bottom = SOBEL_RADIUS;
+  gegl_operation_set_format (operation, "input", babl_format ("Y float"));
+  gegl_operation_set_format (operation, "output", babl_format ("Y float"));
 }
 
 static gboolean
@@ -50,9 +49,9 @@ bline_operation_edge_detect_process (GeglOperation       *operation,
 {
   GeglRectangle compute;
 
-  compute = gegl_operation_get_required_for_output (operation, "input",result);
+  compute = gegl_operation_get_required_for_output (operation, "input", result);
 
-  bline_edge (input, &compute, output, result, TRUE, TRUE, TRUE);//o->horizontal, o->vertical, o->keep_signal);
+  bline_edge (input, &compute, output, result, TRUE, TRUE, TRUE);
 
   return  TRUE;
 }
@@ -72,33 +71,68 @@ bline_edge (GeglBuffer          *src,
             gboolean            vertical,
             gboolean            keep_signal)
 {
-
   gint x, y;
-  gint offset;
-  guchar *src_buf;
-  guchar *dst_buf;
+  gfloat *src_buf;
+  gfloat *dst_buf;
 
   gint src_width = src_rect->width;
 
-  src_buf = g_new0 (guchar, src_rect->width * src_rect->height);
-  dst_buf = g_new0 (guchar, dst_rect->width * dst_rect->height);
+  src_buf = g_new0 (gfloat, src_rect->width * src_rect->height);
+  dst_buf = g_new0 (gfloat, dst_rect->width * dst_rect->height);
 
-  gegl_buffer_get (src, src_rect, 1.0, babl_format ("Y u8"), src_buf,
-                   GEGL_AUTO_ROWSTRIDE, GEGL_ABYSS_NONE);
+  gegl_buffer_get (src, src_rect, 1.0, babl_format ("Y float"),
+                   src_buf, GEGL_AUTO_ROWSTRIDE, GEGL_ABYSS_NONE);
 
-  offset = 0;
+#define GSPIX(buf, w, x, y)  ((buf[x + ((y) * w)]))
 
-  // just copy :-)
-  for (y=0; y<dst_rect->height; y++)
-    for (x=0; x<dst_rect->width; x++)
+  for (y = 0; y < dst_rect->height; y++)
+    for (x = 0; x < dst_rect->width; x++)
       {
-        guchar *srcpix = src_buf + (x + y * src_width);
-        dst_buf[offset] = *srcpix;
-        offset++;
+        gfloat hor_grad = 0.0f;
+        gfloat ver_grad = 0.0f;
+        gfloat     grad = 0.0f;
+
+        gint i = x + SOBEL_RADIUS;
+        gint j = y + SOBEL_RADIUS;
+
+        if (horizontal)
+          {
+              /* [ -1, 0, 1 ]
+                 [ -2, 0, 2 ]
+                 [ -1, 0, 1 ] */
+              hor_grad =
+               -1.0f * GSPIX(src_buf, src_width, i-1, j-1)
+               +1.0f * GSPIX(src_buf, src_width, i+1, j-1)
+               -2.0f * GSPIX(src_buf, src_width, i-1, j)
+               +2.0f * GSPIX(src_buf, src_width, i+1, j);
+               -1.0f * GSPIX(src_buf, src_width, i-1, j+1)
+               +1.0f * GSPIX(src_buf, src_width, i+1, j+1);
+          }
+
+        if (vertical)
+          {
+            /* [ -1, -2, -1 ]
+               [  0,  0,  0 ]
+               [  1,  2,  1 ] */
+            ver_grad =
+             -1.0f * GSPIX(src_buf, src_width, i-1, j-1)
+             +1.0f * GSPIX(src_buf, src_width, i-1, j+1)
+             -2.0f * GSPIX(src_buf, src_width,   i, j-1)
+             +2.0f * GSPIX(src_buf, src_width,   i, j+1)
+             -1.0f * GSPIX(src_buf, src_width, i+1, j-1)
+             +1.0f * GSPIX(src_buf, src_width, i+1, j+1);
+          }
+
+        if (horizontal && vertical)
+          grad = RMS(hor_grad, ver_grad) / 1.41f;
+        else
+          grad = fabsf(hor_grad + ver_grad);
+
+        dst_buf[x + y * dst_rect->width] = grad;
       }
 
-  gegl_buffer_set (dst, dst_rect, 0, babl_format ("Y u8"), dst_buf,
-                   GEGL_AUTO_ROWSTRIDE);
+  gegl_buffer_set (dst, dst_rect, 1.0, babl_format ("Y float"),
+                   dst_buf, GEGL_AUTO_ROWSTRIDE);
 
   g_free (src_buf);
   g_free (dst_buf);
@@ -128,3 +162,5 @@ bline_operation_edge_detect_class_init (BlineOperationEdgeDetectClass *klass)
     "description", "Specialized direction-dependent edge detection",
     NULL);
 }
+
+/* vim: set ft=gnuc: */
