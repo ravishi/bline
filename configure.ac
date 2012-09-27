@@ -2,12 +2,12 @@ AC_PREREQ([2.68])
 AC_INIT([bline], [0.3.0], [dirleyrls@gmail.com])
 AC_CONFIG_AUX_DIR([build])
 AC_CONFIG_MACRO_DIR([m4])
-AM_INIT_AUTOMAKE([1.11.1 foreign -Wall -Werror dist-bzip2])
+AM_INIT_AUTOMAKE([1.11.1 no-define -Wall -Werror dist-bzip2 -Wno-portability])
 
 AC_PROG_CC
 AM_PROG_CC_C_O
 AC_PROG_INSTALL
-AC_PROG_RANLIB
+LT_INIT
 
 AM_PATH_GLIB_2_0(2.33.14, :, :, gobject gthread)
 PKG_CHECK_MODULES([GEGL], [gegl-0.2 >= 0.2.0])

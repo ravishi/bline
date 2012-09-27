@@ -1,35 +1,29 @@
-#include <gegl.h>
-#include <math.h>
-#include <stdio.h>
 #include "config.h"
-#include "bline-operation-edge-detect.h"
+
+#ifdef GEGL_CHANT_PROPERTIES
+
+gegl_chant_boolean (horizontal, "Horizontal", TRUE, "Horizontal")
+
+gegl_chant_boolean (veritucal, "Vertical", TRUE, "Vertical")
+
+#else
+
+#define GEGL_CHANT_TYPE_AREA_FILTER
+#define GEGL_CHANT_C_FILE           "edge-detect.c"
+
+#include <gegl-chant.h>
+#include <math.h>
 
 #define SOBEL_RADIUS 1
 
-// Sobel: vertical e horizontal
-const int SOBEL_MASK[2][3][3] = {
-    {{1, 0, -1}, {2, 0, -2}, {1, 0, -1}},
-    {{1, 2, 1}, {0, 0, 0}, {-1, -2, -1}},
-};
+static void bline_edge  (GeglBuffer          *src,
+                         const GeglRectangle *src_rect,
+                         GeglBuffer          *dst,
+                         const GeglRectangle *dst_rect,
+                         gboolean            horizontal,
+                         gboolean            vertical,
+                         gboolean            keep_signal);
 
-static gboolean bline_operation_edge_detect_process (GeglOperation       *operation,
-                                               GeglBuffer          *input,
-                                               GeglBuffer          *output,
-                                               const GeglRectangle *result,
-                                               gint                 level);
-
-static void     bline_edge                    (GeglBuffer          *src,
-                                               const GeglRectangle *src_rect,
-                                               GeglBuffer          *dst,
-                                               const GeglRectangle *dst_rect,
-                                               gboolean            horizontal,
-                                               gboolean            vertical,
-                                               gboolean            keep_signal);
-
-
-G_DEFINE_TYPE (BlineOperationEdgeDetect, bline_operation_edge_detect, GEGL_TYPE_OPERATION_AREA_FILTER)
-
-#define parent_class bline_operation_edge_detect_parent_class
 
 static void
 prepare (GeglOperation *operation)
@@ -41,11 +35,11 @@ prepare (GeglOperation *operation)
 }
 
 static gboolean
-bline_operation_edge_detect_process (GeglOperation       *operation,
-                                     GeglBuffer          *input,
-                                     GeglBuffer          *output,
-                                     const GeglRectangle *result,
-                                     gint                 level)
+process (GeglOperation       *operation,
+         GeglBuffer          *input,
+         GeglBuffer          *output,
+         const GeglRectangle *result,
+         gint                 level)
 {
   GeglRectangle compute;
 
@@ -57,9 +51,9 @@ bline_operation_edge_detect_process (GeglOperation       *operation,
 }
 
 inline static gfloat
-RMS(gfloat a, gfloat b)
+RMS (gfloat a, gfloat b)
 {
-  return sqrtf(a*a+b*b);
+  return sqrtf (a*a+b*b);
 }
 
 static void
@@ -139,28 +133,24 @@ bline_edge (GeglBuffer          *src,
 }
 
 static void
-bline_operation_edge_detect_init (BlineOperationEdgeDetect *self)
+gegl_chant_class_init (GeglChantClass *klass)
 {
-}
+  GeglOperationClass       *operation_class;
+  GeglOperationFilterClass *filter_class;
 
-static void
-bline_operation_edge_detect_class_init (BlineOperationEdgeDetectClass *klass)
-{
-  GObjectClass              *object_class    = G_OBJECT_CLASS (klass);
-  GeglOperationClass        *operation_class = GEGL_OPERATION_CLASS (klass);
-  GeglOperationFilterClass  *filter_class    = GEGL_OPERATION_FILTER_CLASS (klass);
+  operation_class  = GEGL_OPERATION_CLASS (klass);
+  filter_class     = GEGL_OPERATION_FILTER_CLASS (klass);
 
-  //object_class->set_property    = bline_operation_edge_detect_set_property;
-  //object_class->get_property    = bline_operation_edge_detect_get_property;
-
+  filter_class->process    = process;
   operation_class->prepare = prepare;
-  filter_class->process = bline_operation_edge_detect_process;
 
   gegl_operation_class_set_keys (operation_class,
-    "name"       , "bline:edge-detect",
-    "categories" , "edge-detect",
-    "description", "Specialized direction-dependent edge detection",
-    NULL);
+                                 "name"       , "bline:edge-detect",
+                                 "categories" , "edge-detect",
+                                 "description",
+                                 "Specialized direction-dependent edge detection",
+                                 NULL);
 }
 
+# endif
 /* vim: set ft=gnuc: */

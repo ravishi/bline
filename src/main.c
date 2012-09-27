@@ -1,14 +1,24 @@
 #include <gegl.h>
 #include <glib/gprintf.h>
-#include "gegl-operations/bline-operation-edge-detect.h"
+#include <string.h>
+#include <stdlib.h>
 
 int
 main (gint    argc,
       gchar **argv)
 {
-  g_type_init ();
+  printf("%d\n", sz);
+  
+  /*
+  new_gegl_path = malloc (sz);
 
-  g_type_class_ref (BLINE_TYPE_OPERATION_EDGE_DETECT);
+  snprintf ("%s:%s", sz, BLINE_OPERATIONS_DIR, gegl_path);
+  
+  setenv("GEGL_PATH", new_gegl_path, 1);
+
+  free(gegl_path);
+  free(new_gegl_path);
+  */
 
   gegl_init (&argc, &argv);
 

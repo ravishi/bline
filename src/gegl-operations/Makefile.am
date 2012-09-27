@@ -1,7 +1,3 @@
-noinst_LIBRARIES = libblinegegl.a
+include $(top_srcdir)/src/gegl-operations/Makefile-operations.am
 
-libblinegegl_a_SOURCES = \
-	bline-operation-edge-detect.h \
-	bline-operation-edge-detect.c
-
-AM_CFLAGS = @GEGL_CFLAGS@
+AM_CFLAGS += @GEGL_CFLAGS@
