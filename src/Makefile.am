@@ -9,6 +9,6 @@ bline_SOURCES = main.c
 dist_bline_DATA = bline.glade bline_icon.png
 
 bline_CFLAGS = @GLIB_CFLAGS@ @GEGL_CFLAGS@ -DBLINE_OPERATIONS_DIR="\"$(datadir)/operations\""
-bline_LDADD = @GLIB_LIBS@ @GEGL_LIBS@ 
+bline_LDADD = gegl-operations/libblineoperations.a @GLIB_LIBS@ @GEGL_LIBS@ 
 
 CLEANFILES = *~

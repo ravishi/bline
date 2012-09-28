@@ -7,19 +7,6 @@ int
 main (gint    argc,
       gchar **argv)
 {
-  printf("%d\n", sz);
-  
-  /*
-  new_gegl_path = malloc (sz);
-
-  snprintf ("%s:%s", sz, BLINE_OPERATIONS_DIR, gegl_path);
-  
-  setenv("GEGL_PATH", new_gegl_path, 1);
-
-  free(gegl_path);
-  free(new_gegl_path);
-  */
-
   gegl_init (&argc, &argv);
 
   {

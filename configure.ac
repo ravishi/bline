@@ -2,7 +2,7 @@ AC_PREREQ([2.68])
 AC_INIT([bline], [0.3.0], [dirleyrls@gmail.com])
 AC_CONFIG_AUX_DIR([build])
 AC_CONFIG_MACRO_DIR([m4])
-AM_INIT_AUTOMAKE([1.11.1 no-define -Wall -Werror dist-bzip2 -Wno-portability])
+AM_INIT_AUTOMAKE([1.11.1 foreign no-define -Wall -Werror dist-bzip2 -Wno-portability])
 
 AC_PROG_CC
 AM_PROG_CC_C_O

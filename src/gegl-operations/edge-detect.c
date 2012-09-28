@@ -11,8 +11,10 @@ gegl_chant_boolean (veritucal, "Vertical", TRUE, "Vertical")
 #define GEGL_CHANT_TYPE_AREA_FILTER
 #define GEGL_CHANT_C_FILE           "edge-detect.c"
 
-#include <gegl-chant.h>
+#include "bline-chant.h"
 #include <math.h>
+
+GEGL_CHANT_DEFINE_TYPE_GETTER (edge_detect)
 
 #define SOBEL_RADIUS 1
 
