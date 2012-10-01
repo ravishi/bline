@@ -4,19 +4,20 @@
 static void     bline_operation_sobel_class_init (BlineOperationSobelClass *klass);
 static void     bline_operation_sobel_init       (BlineOperationSobel *obj);
 static void     bline_operation_sobel_finalize   (GObject *obj);
-static void     bline_operation_sobel_prepare    (GeglOperation *operation);
-static gboolean bline_operation_sobel_process    (GeglOperation       *operation,
-                                                  GeglBuffer          *input,
-                                                  GeglBuffer          *output,
-                                                  const GeglRectangle *result,
-                                                  gint                level);
-static void     _bline_operation_sobel_process   (GeglBuffer          *src,
-                                                  const GeglRectangle *src_rect,
-                                                  GeglBuffer          *dst,
-                                                  const GeglRectangle *dst_rect,
-                                                  gboolean            horizontal,
-                                                  gboolean            vertical,
-                                                  gboolean            keep_signal);
+
+static void     prepare (GeglOperation *operation);
+static gboolean process (GeglOperation       *operation,
+                         GeglBuffer          *input,
+                         GeglBuffer          *output,
+                         const GeglRectangle *result,
+                         gint                level);
+static void     sobel   (GeglBuffer          *src,
+                         const GeglRectangle *src_rect,
+                         GeglBuffer          *dst,
+                         const GeglRectangle *dst_rect,
+                         gboolean            horizontal,
+                         gboolean            vertical,
+                         gboolean            keep_signal);
 
 #define SOBEL_RADIUS 1
 
@@ -45,10 +46,10 @@ static GParamSpec *bline_operation_sobel_properties[N_PROPERTIES] = { NULL, };
 G_DEFINE_TYPE (BlineOperationSobel, bline_operation_sobel, GEGL_TYPE_OPERATION_AREA_FILTER);
 
 static void
-bline_operation_sobel_set_property (GObject    *object,
-                                    guint      property_id,
-                                    const      GValue *value,
-                                    GParamSpec *pspec)
+set_property (GObject    *object,
+              guint      property_id,
+              const      GValue *value,
+              GParamSpec *pspec)
 {
   BlineOperationSobel *self = BLINE_OPERATION_SOBEL (object);
 
@@ -67,10 +68,10 @@ bline_operation_sobel_set_property (GObject    *object,
 }
 
 static void
-bline_operation_sobel_get_property (GObject    *object,
-                                    guint      property_id,
-                                    GValue     *value,
-                                    GParamSpec *pspec)
+get_property (GObject    *object,
+              guint      property_id,
+              GValue     *value,
+              GParamSpec *pspec)
 {
   BlineOperationSobel *self = BLINE_OPERATION_SOBEL (object);
 
@@ -97,11 +98,11 @@ bline_operation_sobel_class_init (BlineOperationSobelClass *klass)
 
   parent_class                      = g_type_class_peek_parent (klass);
 
-  object_class->set_property        = bline_operation_sobel_set_property;
-  object_class->get_property        = bline_operation_sobel_get_property;
   object_class->finalize            = bline_operation_sobel_finalize;
-  operation_class->prepare          = bline_operation_sobel_prepare;
-  operation_filter_class->process   = bline_operation_sobel_process;
+  object_class->set_property        = set_property;
+  object_class->get_property        = get_property;
+  operation_class->prepare          = prepare;
+  operation_filter_class->process   = process;
 
   bline_operation_sobel_properties[PROP_BLINE_OPERATION_SOBEL_HORIZONTAL] =
     g_param_spec_boolean ("horizontal",
@@ -151,7 +152,7 @@ bline_operation_sobel_new (void)
 }
 
 static void
-bline_operation_sobel_prepare    (GeglOperation *operation)
+prepare    (GeglOperation *operation)
 {
   GeglOperationAreaFilter *area = GEGL_OPERATION_AREA_FILTER (operation);
   area->left = area->right = area->top = area->bottom = SOBEL_RADIUS;
@@ -160,19 +161,18 @@ bline_operation_sobel_prepare    (GeglOperation *operation)
 }
 
 static gboolean
-bline_operation_sobel_process    (GeglOperation       *operation,
-                                  GeglBuffer          *input,
-                                  GeglBuffer          *output,
-                                  const GeglRectangle *result,
-                                  gint                level)
+process    (GeglOperation       *operation,
+            GeglBuffer          *input,
+            GeglBuffer          *output,
+            const GeglRectangle *result,
+            gint                level)
 {
   BlineOperationSobel *self = BLINE_OPERATION_SOBEL (operation);
   GeglRectangle       compute;
 
   compute = gegl_operation_get_required_for_output (operation, "input", result);
-  _bline_operation_sobel_process (input, &compute, output, result,
-                                  self->priv->horizontal,
-                                  self->priv->vertical, TRUE);
+  sobel (input, &compute, output, result,
+         self->priv->horizontal, self->priv->vertical, TRUE);
   return  TRUE;
 }
 
@@ -183,13 +183,13 @@ RMS (gfloat a, gfloat b)
 }
 
 static void
-_bline_operation_sobel_process (GeglBuffer          *src,
-                                const GeglRectangle *src_rect,
-                                GeglBuffer          *dst,
-                                const GeglRectangle *dst_rect,
-                                gboolean            horizontal,
-                                gboolean            vertical,
-                                gboolean            keep_signal)
+sobel (GeglBuffer          *src,
+       const GeglRectangle *src_rect,
+       GeglBuffer          *dst,
+       const GeglRectangle *dst_rect,
+       gboolean            horizontal,
+       gboolean            vertical,
+       gboolean            keep_signal)
 {
   gint x, y;
   gfloat *src_buf;
