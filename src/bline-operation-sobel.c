@@ -18,20 +18,75 @@ static void     _bline_operation_sobel_process   (GeglBuffer          *src,
                                                   gboolean            vertical,
                                                   gboolean            keep_signal);
 
-struct _BlineOperationSobelPrivate {
-  gboolean vertical;
-  gboolean horizontal;
-};
+#define SOBEL_RADIUS 1
 
 #define BLINE_OPERATION_SOBEL_GET_PRIVATE(o)      (G_TYPE_INSTANCE_GET_PRIVATE((o), \
                                                    BLINE_TYPE_OPERATION_SOBEL, \
                                                    BlineOperationSobelPrivate))
 
-#define SOBEL_RADIUS 1
+enum
+{
+  PROP_0,
+  PROP_BLINE_OPERATION_SOBEL_HORIZONTAL,
+  PROP_BLINE_OPERATION_SOBEL_VERTICAL,
+  N_PROPERTIES
+};
+
+struct _BlineOperationSobelPrivate
+{
+  gboolean vertical;
+  gboolean horizontal;
+};
 
 static GeglOperationAreaFilterClass *parent_class = NULL;
 
+static GParamSpec *bline_operation_sobel_properties[N_PROPERTIES] = { NULL, };
+
 G_DEFINE_TYPE (BlineOperationSobel, bline_operation_sobel, GEGL_TYPE_OPERATION_AREA_FILTER);
+
+static void
+bline_operation_sobel_set_property (GObject    *object,
+                                    guint      property_id,
+                                    const      GValue *value,
+                                    GParamSpec *pspec)
+{
+  BlineOperationSobel *self = BLINE_OPERATION_SOBEL (object);
+
+  switch (property_id)
+    {
+    case PROP_BLINE_OPERATION_SOBEL_HORIZONTAL:
+      self->priv->horizontal = g_value_get_boolean (value);
+      break;
+    case PROP_BLINE_OPERATION_SOBEL_VERTICAL:
+      self->priv->vertical = g_value_get_boolean (value);
+      break;
+    default:
+      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+      break;
+    }
+}
+
+static void
+bline_operation_sobel_get_property (GObject    *object,
+                                    guint      property_id,
+                                    GValue     *value,
+                                    GParamSpec *pspec)
+{
+  BlineOperationSobel *self = BLINE_OPERATION_SOBEL (object);
+
+  switch (property_id)
+    {
+    case PROP_BLINE_OPERATION_SOBEL_HORIZONTAL:
+      g_value_set_boolean (value, self->priv->horizontal);
+      break;
+    case PROP_BLINE_OPERATION_SOBEL_VERTICAL:
+      g_value_set_boolean (value, self->priv->vertical);
+      break;
+    default:
+      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+      break;
+    }
+}
 
 static void
 bline_operation_sobel_class_init (BlineOperationSobelClass *klass)
@@ -41,25 +96,46 @@ bline_operation_sobel_class_init (BlineOperationSobelClass *klass)
   GeglOperationFilterClass  *operation_filter_class = GEGL_OPERATION_FILTER_CLASS (klass);
 
   parent_class                      = g_type_class_peek_parent (klass);
+
+  object_class->set_property        = bline_operation_sobel_set_property;
+  object_class->get_property        = bline_operation_sobel_get_property;
   object_class->finalize            = bline_operation_sobel_finalize;
   operation_class->prepare          = bline_operation_sobel_prepare;
   operation_filter_class->process   = bline_operation_sobel_process;
+
+  bline_operation_sobel_properties[PROP_BLINE_OPERATION_SOBEL_HORIZONTAL] =
+    g_param_spec_boolean ("horizontal",
+                          "Horizontal",
+                          "Horizontal detection",
+                          TRUE,
+                          (G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
+
+  bline_operation_sobel_properties[PROP_BLINE_OPERATION_SOBEL_VERTICAL] =
+    g_param_spec_boolean ("vertical",
+                          "Vertical",
+                          "Vertical detection",
+                          TRUE,
+                          (G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
+
+  g_object_class_install_properties (object_class,
+                                     N_PROPERTIES,
+                                     bline_operation_sobel_properties);
+
+  g_type_class_add_private (object_class, sizeof(BlineOperationSobelPrivate));
 
   gegl_operation_class_set_keys (operation_class,
                                  "name"     , "bline:sobel",
                                  "categries", "edge-detect",
                                  "description", "Specialized direction-dependent edge detection",
                                  NULL);
-
-  g_type_class_add_private (object_class, sizeof(BlineOperationSobelPrivate));
 }
 
 static void
 bline_operation_sobel_init (BlineOperationSobel *obj)
 {
   obj->priv = BLINE_OPERATION_SOBEL_GET_PRIVATE(obj);
-  obj->priv->vertical = FALSE;
-  obj->priv->horizontal = FALSE;
+  obj->priv->vertical = TRUE;
+  obj->priv->horizontal = TRUE;
 }
 
 static void
@@ -90,9 +166,13 @@ bline_operation_sobel_process    (GeglOperation       *operation,
                                   const GeglRectangle *result,
                                   gint                level)
 {
-  GeglRectangle compute;
+  BlineOperationSobel *self = BLINE_OPERATION_SOBEL (operation);
+  GeglRectangle       compute;
+
   compute = gegl_operation_get_required_for_output (operation, "input", result);
-  _bline_operation_sobel_process (input, &compute, output, result, TRUE, TRUE, TRUE);
+  _bline_operation_sobel_process (input, &compute, output, result,
+                                  self->priv->horizontal,
+                                  self->priv->vertical, TRUE);
   return  TRUE;
 }
 
